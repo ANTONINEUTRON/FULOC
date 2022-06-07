@@ -9,7 +9,6 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -26,6 +25,9 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.neutron.fuloc.data.LocationsInFulafia
+import com.neutron.fuloc.data.LocationsInFulafia.calculateDistance
+import com.neutron.fuloc.fragments.LocationDescriptionFragment
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -49,11 +51,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-
     }
 
     override fun onResume() {
-        getLocationPermission()
+        verifyLocationPermission()
 
         super.onResume()
     }
@@ -71,20 +72,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
 
         //SHOW SCHOOL DETAILS HERE
+        displayPlacesInFulafia()
         // Add a marker in Sydney and move the camera
-        val sydney = LatLng(-4.0, 4.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
 
         //show user location
         if(isLocationPermissionGranted){
             detectUserLocation()
         }else{
-            getLocationPermission()
+            verifyLocationPermission()
         }
+
+
     }
 
-    private fun getLocationPermission() {
+    private fun verifyLocationPermission() {
         /*
          * Request location permission, so that we can get the location of the
          * device. The result of the permission request is handled by a callback,
@@ -145,9 +146,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 locationResult.addOnCompleteListener(this) { task ->
                     if (task.isSuccessful) {
                         // Set the map's camera position to the current location of the device.
-                        val lastKnownLocation: Location = task.result
+                        val lastKnownLocation: Location? = task.result
                         if (lastKnownLocation != null) {
                             pointToUserCurrentLocation(lastKnownLocation)
+                            Toast.makeText(this,"last loc known",Toast.LENGTH_LONG).show()
                         } else {
                             //ask user to turn on location
                             detectUserLocation()
@@ -200,9 +202,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             location.latitude,
             location.longitude
         )
+        //determine appropriete zoom to use
+        val schoolPointOfRef = LocationsInFulafia.listOfPlaces[0]//initial location for list of location serve as school point
+        val zoomLevel = getApproprieteZoom(
+            userLatLng,
+            LatLng(schoolPointOfRef.latitude,schoolPointOfRef.longitude)
+        )
+//
+//        Toast.makeText(this,zoomLevel.toString(), Toast.LENGTH_LONG).show()
         mMap.moveCamera(
             CameraUpdateFactory.newLatLngZoom(
-                userLatLng, 17.toFloat()
+                userLatLng, zoomLevel
             )
         )
 
@@ -216,4 +226,48 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             )
         }
     }
+
+    private fun getApproprieteZoom(userLatLng: LatLng, schoolLatLng: LatLng): Float {
+        val distanceInMeters: Double = calculateDistance(schoolLatLng, userLatLng)
+        if(distanceInMeters <= 508.497220){
+            return 21f
+        }else if(distanceInMeters <= 808.497220){
+            return 20f
+        }else if(distanceInMeters <= 1128.497220){
+            return 17f
+        }else if(distanceInMeters <= 9027.977761){
+            return 13.5f
+        }else if(distanceInMeters <= 72223.822090){
+            return 10f
+        }else if(distanceInMeters <= 588895.288400){
+            return 6f
+        }else if(distanceInMeters <= 2311162.307000){
+            return 5f
+        }else{
+            return 3f
+        }
+    }
+
+    private fun displayPlacesInFulafia() {
+        //Get list of locations
+        //Display on map
+        LocationsInFulafia.listOfPlaces.forEachIndexed { index, place ->
+            val loc = LatLng(place.latitude, place.longitude)
+            val marker: Marker? = mMap.addMarker(MarkerOptions().position(loc).title(place.name).snippet(place.description))
+            marker?.tag = index //will be pass to bottom sheet
+            if(index == 0) {
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc,13.0f))
+            }
+            mMap.setOnMarkerClickListener { markerr ->
+                if(markerr.tag != null){
+                    LocationDescriptionFragment.getInstance(markerr.tag as Int,userLatLng).show(supportFragmentManager, "Show Details")//index of the location in list will eneble fast access of location
+                }
+                false
+            }
+            //set listeners to markers
+        }
+        //
+    }
+
+
 }
