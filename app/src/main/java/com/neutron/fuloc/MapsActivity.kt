@@ -9,6 +9,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
@@ -27,12 +28,15 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.neutron.fuloc.data.LocationsInFulafia
 import com.neutron.fuloc.data.LocationsInFulafia.calculateDistance
+import com.neutron.fuloc.databinding.ActivityMapsBinding
 import com.neutron.fuloc.fragments.LocationDescriptionFragment
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
+    private lateinit var activityMapsBinding:ActivityMapsBinding
     private lateinit var mMap: GoogleMap
+    private lateinit var mapFragment: SupportMapFragment
     private val fusedLocationProviderClient: FusedLocationProviderClient by lazy {
         LocationServices.getFusedLocationProviderClient(this)
     }
@@ -46,11 +50,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_maps)
+        activityMapsBinding = ActivityMapsBinding.inflate(layoutInflater)
+        setContentView(activityMapsBinding.root)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        val mapFragment = supportFragmentManager
+        mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
     }
 
     override fun onResume() {
@@ -83,6 +89,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
 
+        val mapTypeSwitch = activityMapsBinding.mapTypeSwitch
+        mapTypeSwitch.setOnClickListener { switch ->
+            if(mapTypeSwitch.isChecked){
+                Toast.makeText(this, "satelite mode", Toast.LENGTH_LONG).show()
+                mMap.mapType = GoogleMap.MAP_TYPE_HYBRID
+                mapFragment.getMapAsync(this)
+            }else{
+                mMap.mapType = GoogleMap.MAP_TYPE_NORMAL
+                Toast.makeText(this, "normal mode", Toast.LENGTH_LONG).show()
+                mapFragment.getMapAsync(this)
+            }
+        }
     }
 
     private fun verifyLocationPermission() {
@@ -142,53 +160,53 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         //listen for user location and updates it on the map
         try {
             if (isLocationPermissionGranted) {
-                val locationResult = fusedLocationProviderClient.lastLocation
-                locationResult.addOnCompleteListener(this) { task ->
-                    if (task.isSuccessful) {
-                        // Set the map's camera position to the current location of the device.
-                        val lastKnownLocation: Location? = task.result
-                        if (lastKnownLocation != null) {
-                            pointToUserCurrentLocation(lastKnownLocation)
-                            Toast.makeText(this,"last loc known",Toast.LENGTH_LONG).show()
-                        } else {
-                            //ask user to turn on location
+//                val locationResult = fusedLocationProviderClient.getCurrentLocation()
+//                locationResult.addOnCompleteListener(this) { task ->
+//                    if (task.isSuccessful) {
+//                        // Set the map's camera position to the current location of the device.
+//                        val lastKnownLocation: Location? = task.result
+//                        if (lastKnownLocation != null) {
+//                            pointToUserCurrentLocation(lastKnownLocation)
+//                            Toast.makeText(this,"last loc known",Toast.LENGTH_LONG).show()
+//                        } else {
+//                            //ask user to turn on location
+//                            detectUserLocation()
+//                            Toast.makeText(this,"last loc unknown",Toast.LENGTH_LONG).show()
+//                        }
+//                    }
+                    //Instantiating the Location request and setting the priority and the interval I need to update the location.
+                    //Instantiating the Location request and setting the priority and the interval I need to update the location.
+                    val locationRequest = LocationRequest.create()
+                    locationRequest.interval = 0
+                    locationRequest.numUpdates = 2
+                    locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+
+                    //instantiating the LocationCallBack
+                    val locationCallback: LocationCallback = object : LocationCallback() {
+                        override fun onLocationResult(locationResult: LocationResult) {
+                            val lastKnownLocation: Location? = locationResult.lastLocation
+                            if (lastKnownLocation != null) {
+                                pointToUserCurrentLocation(lastKnownLocation)
+                            }
+                        }
+
+                        override fun onLocationAvailability(locationAvailability: LocationAvailability) {
+                            if (!locationAvailability.isLocationAvailable) {
+                                Toast.makeText(
+                                    this@MapsActivity,
+                                    "Location is unavailable",
+                                    Toast.LENGTH_LONG
+                                ).show();
+                            }
                             detectUserLocation()
                         }
                     }
-                    //Instantiating the Location request and setting the priority and the interval I need to update the location.
-                    //Instantiating the Location request and setting the priority and the interval I need to update the location.
-//                    val locationRequest = LocationRequest.create()
-//                    locationRequest.interval = 7000
-//                    locationRequest.fastestInterval = 5000
-//                    locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-//
-//
-//                    //instantiating the LocationCallBack
-//                    val locationCallback: LocationCallback = object : LocationCallback() {
-//                        override fun onLocationResult(locationResult: LocationResult) {
-//                            val lastKnownLocation: Location = locationResult.lastLocation
-//                            if (lastKnownLocation != null) {
-//                                pointToUserCurrentLocation(lastKnownLocation)
-//
-//                            }
-//                        }
-//
-//                        override fun onLocationAvailability(locationAvailability: LocationAvailability) {
-//                            if (!locationAvailability.isLocationAvailable) {
-//                                Toast.makeText(
-//                                    this@MapsActivity,
-//                                    "Location is unavailable",
-//                                    Toast.LENGTH_LONG
-//                                ).show();
-//                            }
-//                        }
-//                    }
-//                    fusedLocationProviderClient.requestLocationUpdates(
-//                        locationRequest,
-//                        locationCallback,
-//                        Looper.getMainLooper()
-//                    )
-                }
+                    fusedLocationProviderClient.requestLocationUpdates(
+                        locationRequest,
+                        locationCallback,
+                        Looper.getMainLooper()
+                    )
+
             }
         } catch (e: Exception){
             Log.e("FULOC", "Exception occured ${e.message.toString()}")
@@ -222,7 +240,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             userLocationMarker = mMap.addMarker(
                 MarkerOptions()
                     .position(userLatLng).title("Your Location")
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE))
             )
         }
     }
@@ -253,14 +271,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         //Display on map
         LocationsInFulafia.listOfPlaces.forEachIndexed { index, place ->
             val loc = LatLng(place.latitude, place.longitude)
-            val marker: Marker? = mMap.addMarker(MarkerOptions().position(loc).title(place.name).snippet(place.description))
+            val marker: Marker? = mMap.addMarker(
+                MarkerOptions()
+                    .position(loc)
+                    .title(place.name)
+                    .snippet(place.description)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+            )
             marker?.tag = index //will be pass to bottom sheet
             if(index == 0) {
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(loc,13.0f))
             }
             mMap.setOnMarkerClickListener { markerr ->
-                if(markerr.tag != null){
-                    LocationDescriptionFragment.getInstance(markerr.tag as Int,userLatLng).show(supportFragmentManager, "Show Details")//index of the location in list will eneble fast access of location
+                if(markerr.tag != null && this::userLatLng.isInitialized){
+                    LocationDescriptionFragment(markerr.tag as Int,userLatLng).show(supportFragmentManager, "Show Details")//index of the location in list will eneble fast access of location
                 }
                 false
             }

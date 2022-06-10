@@ -1,11 +1,13 @@
 package com.neutron.fuloc.fragments
 
+import android.content.Intent
 import android.os.Bundle
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.google.android.gms.maps.model.LatLng
+import com.neutron.fuloc.MapDirectionActivity
 import com.neutron.fuloc.data.LocationsInFulafia
 import com.neutron.fuloc.databinding.FragmentLocationDescriptionDialogBinding
 import com.neutron.fuloc.models.Place
@@ -26,6 +28,7 @@ const val ARG_ITEM_COUNT = "item_count"
  */
 class LocationDescriptionFragment(val index: Int, val userLatLng: LatLng) : BottomSheetDialogFragment() {
 
+    private val fulafiaLocation:Place = LocationsInFulafia.listOfPlaces[index]
     private var _binding: FragmentLocationDescriptionDialogBinding? = null
 
     // This property is only valid between onCreateView and
@@ -50,23 +53,22 @@ class LocationDescriptionFragment(val index: Int, val userLatLng: LatLng) : Bott
         binding.distance.text = "Distance: ${BigDecimal(getDistance()).setScale(2, RoundingMode.HALF_EVEN)} meters"
 
         binding.dirBtn.setOnClickListener {
-            //start listening to user movement
+            val url:String = "https://www.google.com/maps/dir/${userLatLng.latitude},${userLatLng.longitude}/${fulafiaLocation.latitude},${fulafiaLocation.longitude}"
+            //"https://www.google.com/maps?saddr=Current+Location&daddr=${fulafiaLocation.longitude},${fulafiaLocation.latitude}"
+            startActivity(
+                Intent(requireContext(), MapDirectionActivity::class.java)
+                    .putExtra("URL",url)
+            )
         }
     }
 
     private fun getDistance(): Double {
         return LocationsInFulafia.calculateDistance(
-            LocationsInFulafia.listOfPlaces[0].latLng,
+            fulafiaLocation.latLng,
             userLatLng
         )
     }
-    companion object {
 
-        // TODO: Customize parameters
-        fun getInstance(index: Int, userLatLng: LatLng): LocationDescriptionFragment =
-            LocationDescriptionFragment(index, userLatLng)
-
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()

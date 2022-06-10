@@ -43,7 +43,7 @@
         android:layout_height="wrap_content"
         app:backgroundTint="@color/purple_700"
         android:textColor="@color/white"
-        android:text="Monitor My Movement"
+        android:text="Direction"
         android:layout_gravity="center"
         android:layout_margin="10dp"/>
 
