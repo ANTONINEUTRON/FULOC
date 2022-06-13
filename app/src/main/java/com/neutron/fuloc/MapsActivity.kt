@@ -90,7 +90,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
         val mapTypeSwitch = activityMapsBinding.mapTypeSwitch
-        mapTypeSwitch.setOnClickListener { switch ->
+        mapTypeSwitch.setOnClickListener {
             if(mapTypeSwitch.isChecked){
                 Toast.makeText(this, "satelite mode", Toast.LENGTH_LONG).show()
                 mMap.mapType = GoogleMap.MAP_TYPE_HYBRID
@@ -101,6 +101,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 mapFragment.getMapAsync(this)
             }
         }
+
     }
 
     private fun verifyLocationPermission() {
@@ -157,6 +158,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     @SuppressLint("MissingPermission")
     private fun showUserLocation() {
+        mMap.isMyLocationEnabled = false
         //listen for user location and updates it on the map
         try {
             if (isLocationPermissionGranted) {
