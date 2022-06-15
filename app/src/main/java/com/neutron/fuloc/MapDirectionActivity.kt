@@ -1,5 +1,6 @@
 package com.neutron.fuloc
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -33,6 +34,7 @@ class MapDirectionActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun isInternetConnected(): Boolean {
         val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         if (connectivityManager != null) {

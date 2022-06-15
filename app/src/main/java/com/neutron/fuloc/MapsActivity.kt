@@ -162,20 +162,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         //listen for user location and updates it on the map
         try {
             if (isLocationPermissionGranted) {
-//                val locationResult = fusedLocationProviderClient.getCurrentLocation()
-//                locationResult.addOnCompleteListener(this) { task ->
-//                    if (task.isSuccessful) {
-//                        // Set the map's camera position to the current location of the device.
-//                        val lastKnownLocation: Location? = task.result
-//                        if (lastKnownLocation != null) {
-//                            pointToUserCurrentLocation(lastKnownLocation)
-//                            Toast.makeText(this,"last loc known",Toast.LENGTH_LONG).show()
-//                        } else {
-//                            //ask user to turn on location
-//                            detectUserLocation()
-//                            Toast.makeText(this,"last loc unknown",Toast.LENGTH_LONG).show()
-//                        }
-//                    }
                     //Instantiating the Location request and setting the priority and the interval I need to update the location.
                     //Instantiating the Location request and setting the priority and the interval I need to update the location.
                     val locationRequest = LocationRequest.create()
